@@ -1,0 +1,55 @@
+# =============================================================================
+# Woodpecker CI — Lightweight CI/CD for VPS
+# Run separately from the app stack:
+#   docker compose -f docker-compose.ci.yml up -d
+# =============================================================================
+
+services:
+
+  woodpecker-server:
+    image: woodpeckerci/woodpecker-server:v3.13.0
+    container_name: woodpecker-server
+    restart: unless-stopped
+    ports:
+      - "8888:8000"
+    volumes:
+      - woodpecker_data:/var/lib/woodpecker
+    environment:
+      # ── GitHub forge ──
+      WOODPECKER_GITHUB: "true"
+      WOODPECKER_GITHUB_CLIENT: ${WOODPECKER_GITHUB_CLIENT}
+      WOODPECKER_GITHUB_SECRET: ${WOODPECKER_GITHUB_SECRET}
+
+      # ── General ──
+      WOODPECKER_OPEN: "true"
+      WOODPECKER_HOST: http://${VPS_IP}:8888
+      WOODPECKER_AGENT_SECRET: ${WOODPECKER_AGENT_SECRET}
+      WOODPECKER_ADMIN: ${WOODPECKER_ADMIN}
+      WOODPECKER_LOG_LEVEL: info
+    networks:
+      - ci_network
+
+  woodpecker-agent:
+    image: woodpeckerci/woodpecker-agent:v3.13.0
+    container_name: woodpecker-agent
+    command: agent
+    restart: unless-stopped
+    depends_on:
+      - woodpecker-server
+    volumes:
+      - woodpecker_agent_config:/etc/woodpecker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WOODPECKER_SERVER: woodpecker-server:9000
+      WOODPECKER_AGENT_SECRET: ${WOODPECKER_AGENT_SECRET}
+      WOODPECKER_MAX_WORKFLOWS: 1
+    networks:
+      - ci_network
+
+networks:
+  ci_network:
+    driver: bridge
+
+volumes:
+  woodpecker_data:
+  woodpecker_agent_config:

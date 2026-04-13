@@ -1,0 +1,8 @@
+# Development dependencies
+-r base.txt
+
+pytest>=8.0
+pytest-django>=4.8
+pytest-cov>=4.1
+factory-boy>=3.3
+drf-spectacular[sidecar]>=0.27

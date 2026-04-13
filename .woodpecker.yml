@@ -1,0 +1,42 @@
+# =============================================================================
+# Woodpecker CI Pipeline — Auto-deploy on push
+# Runs on the VPS agent, pulls latest code, rebuilds containers
+# =============================================================================
+
+when:
+  branch: main
+  event: push
+
+steps:
+  # ── Pull latest code ──
+  - name: pull
+    image: alpine/git
+    commands:
+      - cd /src && git pull origin main
+    volumes:
+      - /opt/AMS-V2.1:/src
+
+  # ── Rebuild & restart containers (zero-downtime-ish) ──
+  - name: deploy
+    image: docker:27-cli
+    commands:
+      - cd /src
+      - cp .env.prod .env
+      # Rebuild frontend
+      - docker compose -f docker-compose.prod.yml build frontend-builder
+      - docker compose -f docker-compose.prod.yml up -d frontend-builder
+      # Wait for frontend dist
+      - |
+        for i in $(seq 1 60); do
+          if docker compose -f docker-compose.prod.yml exec -T frontend-builder test -f /app/dist/index.html 2>/dev/null; then
+            echo "Frontend build done"
+            break
+          fi
+          sleep 2
+        done
+      # Rebuild & restart backend + nginx
+      - docker compose -f docker-compose.prod.yml up -d --build db web nginx
+      - echo "Deployment complete!"
+    volumes:
+      - /opt/AMS-V2.1:/src
+      - /var/run/docker.sock:/var/run/docker.sock

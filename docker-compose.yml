@@ -1,0 +1,97 @@
+# =============================================================================
+# inventotrackV2 - Docker Compose (Backend + Frontend)
+# PostgreSQL + Django API + Vue/Vite frontend
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    container_name: ams_postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: -E UTF8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ams_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Django Application (Dev / API Testing)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ams_django
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: ams_postgres
+      DB_PORT: 5432
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - ams_network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health/\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Vue Frontend (Vite dev server)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./AMS-FRONT
+      dockerfile: Dockerfile
+    container_name: ams_frontend
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      VITE_API_BASE_URL: /api
+      VITE_PROXY_TARGET: http://web:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./AMS-FRONT:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - ams_network
+
+# -----------------------------------------------------------------------------
+networks:
+  ams_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  frontend_node_modules:
