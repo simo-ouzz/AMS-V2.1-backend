@@ -28,6 +28,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import Permission
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import transaction
 
 
 class TagCreateView(APIView):
@@ -41,9 +42,25 @@ class TagCreateView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        references = request.data.get(
-            "reference", []
-        )  # Obtenir la liste des références depuis les données de la requête
+        # Backward-compatible input handling:
+        # - mobile: {"uid": "..."}
+        # - legacy: {"reference": ["..."]} or {"tag_references": ["..."]}
+        uid = request.data.get("uid")
+        references_payload = request.data.get("reference")
+        if references_payload is None:
+            references_payload = request.data.get("tag_references")
+
+        if uid not in (None, "") and references_payload is None:
+            references = [uid]
+        elif isinstance(references_payload, list):
+            references = references_payload
+        elif isinstance(references_payload, str):
+            references = [references_payload]
+        elif references_payload is None:
+            references = []
+        else:
+            references = references_payload
+
         type_tag = request.data.get("type_tag", None)
 
         if type_tag is None:
@@ -56,6 +73,12 @@ class TagCreateView(APIView):
         if not isinstance(references, list):
             return Response(
                 {"error": "'reference' doit être une liste."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not references:
+            return Response(
+                {"error": "Merci de fournir au moins un tag (uid/reference)."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
