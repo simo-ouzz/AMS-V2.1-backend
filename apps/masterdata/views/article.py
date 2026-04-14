@@ -26,7 +26,7 @@ from rest_framework import filters
 from datatables import ServerSideDataTableView
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import Permission
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
 
