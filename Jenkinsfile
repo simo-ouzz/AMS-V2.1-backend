@@ -5,6 +5,7 @@ pipeline {
     stage('Pull') {
       steps {
         sh '''
+          git config --global --add safe.directory /opt/AMS-V2.2/AMS-V2.1-backend
           cd /opt/AMS-V2.2/AMS-V2.1-backend
           git pull origin main
         '''
