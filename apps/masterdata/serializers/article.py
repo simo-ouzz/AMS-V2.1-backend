@@ -70,6 +70,10 @@ class ArticleSerializeres(serializers.ModelSerializer):
         return obj.fournisseur.nom
 
 class EditItemArticleSerializer(serializers.ModelSerializer):
+    produit = serializers.CharField(source='produit.libelle', default=None)
+    nature = serializers.CharField(source='nature.libelle', default=None)
+    fournisseur = serializers.CharField(source='fournisseur.nom', default=None)
+    marque = serializers.CharField(source='marque.nom', default=None)
     categorie = serializers.SerializerMethodField()
 
     class Meta:
@@ -79,7 +83,7 @@ class EditItemArticleSerializer(serializers.ModelSerializer):
         ]
     def get_categorie(self, obj):
         if obj.produit and obj.produit.categorie:
-            return obj.produit.categorie.id
+            return obj.produit.categorie.libelle
         return None
 
 
