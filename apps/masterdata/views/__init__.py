@@ -2,6 +2,7 @@
 # Domain views (from _views_monolith.py split)
 from .auth import (
     UserDetailAPIView,
+    UserListAPIView,
     LoginUserView,
     assign_groups_view,
     UserPermissionsView,

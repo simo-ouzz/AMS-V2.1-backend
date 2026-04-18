@@ -127,6 +127,7 @@ class KPIDashboardAPIView(APIView):
             'articles_par_famille': distributions['articles_par_famille'],
             'articles_par_nature': distributions['articles_par_nature'],
             'valeur_par_fournisseur': distributions['valeur_par_fournisseur'],
+            'fournisseurs_scatter': distributions.get('fournisseurs_scatter', []),
             'items_par_departement': distributions['items_par_departement'],
             'tags_affectation': distributions['tags_affectation'],
         }
@@ -439,7 +440,22 @@ class KPIDashboardAPIView(APIView):
                     val_four_stats[fid] = {'name': it.article.fournisseur.nom, 'value': 0}
                 val_four_stats[fid]['value'] += float(it.article.prix_achat or 0)
         valeur_par_fournisseur = sorted(val_four_stats.values(), key=lambda x: x['value'], reverse=True)[:10]
-        
+
+        # -- Fournisseurs: volume (items) + valeur (somme prix_achat par item) pour scatter dashboard --
+        four_scatter_stats = {}
+        for it in items_qs:
+            if it.article and it.article.fournisseur:
+                fid = it.article.fournisseur.id
+                if fid not in four_scatter_stats:
+                    four_scatter_stats[fid] = {
+                        'name': it.article.fournisseur.nom,
+                        'articles': 0,
+                        'valeur': 0.0,
+                    }
+                four_scatter_stats[fid]['articles'] += 1
+                four_scatter_stats[fid]['valeur'] += float(it.article.prix_achat or 0)
+        fournisseurs_scatter = list(four_scatter_stats.values())
+
         # -- Items par département --
         dept_stats = {}
         for it in items_qs:
@@ -462,6 +478,7 @@ class KPIDashboardAPIView(APIView):
             'articles_par_famille': articles_par_famille,
             'articles_par_nature': articles_par_nature,
             'valeur_par_fournisseur': valeur_par_fournisseur,
+            'fournisseurs_scatter': fournisseurs_scatter,
             'items_par_departement': items_par_departement,
             'tags_affectation': {
                 'affectes': tags_stats['affectes'],

@@ -134,6 +134,7 @@ from masterdata.views import (
     UpdateQteRecueView,
     UpdateStartAtAPIView,
     UserDetailAPIView,
+    UserListAPIView,
     UserPermissionsView,
     ValidateArticleView,
     VerifyTagsLocationAPI,
@@ -213,6 +214,7 @@ urlpatterns = [
     
     # Utilisateur et permissions
     path("detail/user/", UserDetailAPIView.as_view(), name="user-detail"),  # GET - Info utilisateur
+    path("users/all_users/", UserListAPIView.as_view(), name="users-list"),  # GET - Liste utilisateurs du compte
     path('user/permissions/', UserPermissionsView.as_view(), name='user-permissions'),  # GET - Permissions utilisateur
     path('assign-groups/', assign_groups_view, name='assign-groups'),  # POST - Assigner groupes
     

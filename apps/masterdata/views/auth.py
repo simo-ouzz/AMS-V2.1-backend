@@ -127,6 +127,32 @@ class UserPermissionsView(APIView):
         return Response({"permissions": permissions_list})
 
 
+class UserListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not user.compte_id:
+            return Response([], status=status.HTTP_200_OK)
+
+        users = (
+            UserWeb.objects.filter(compte_id=user.compte_id)
+            .order_by("nom", "prenom", "email")
+            .values("id", "nom", "prenom", "email")
+        )
+
+        data = [
+            {
+                "id": entry["id"],
+                "nom": entry["nom"] or "",
+                "prenom": entry["prenom"] or "",
+                "email": entry["email"] or "",
+            }
+            for entry in users
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+
 # =============================================================================
 # VUES DATATABLES - Nouvelles vues avec intégration du package datatables
 # =============================================================================

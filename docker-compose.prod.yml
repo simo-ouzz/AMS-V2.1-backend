@@ -13,6 +13,11 @@ services:
     image: postgres:17-alpine
     container_name: ams_postgres
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     env_file:
       - .env
     environment:
@@ -40,6 +45,11 @@ services:
       dockerfile: Dockerfile.prod
     container_name: ams_django
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     env_file:
       - .env
     depends_on:
@@ -57,7 +67,7 @@ services:
       - ams_network
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health/\")'"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 20
       start_period: 30s
@@ -69,6 +79,11 @@ services:
     image: nginx:alpine
     container_name: ams_nginx
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       web:
         condition: service_healthy
@@ -87,11 +102,16 @@ services:
   # ---------------------------------------------------------------------------
   frontend-builder:
     build:
-      context: ./AMS-FRONT
+      context: ${FRONTEND_BUILD_CONTEXT:-../AMS-FRONT}
       dockerfile: Dockerfile.prod
       args:
         VITE_API_BASE_URL: /api
     container_name: ams_frontend_builder
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - frontend_dist:/app/dist
 
