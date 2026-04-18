@@ -19,7 +19,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 import pandas as pd
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from django.http import HttpResponse
 from rest_framework import generics
 from django_filters.rest_framework import DjangoFilterBackend
@@ -96,7 +96,7 @@ class ItemListAPIView(ServerSideDataTableView):
     
     # Configuration de pagination
     default_page_size = 20
-    max_page_size = 100
+    max_page_size = 200
 
     def get_queryset(self):
         """
@@ -226,14 +226,14 @@ class ArchiveItemListAPIView(ServerSideDataTableView):
 
     # Configuration de pagination
     default_page_size = 20
-    max_page_size = 100
+    max_page_size = 200
 
     def get_queryset(self):
         """Queryset de base - items archivés uniquement"""
         if not self.request.user.compte:
             return item.objects.none()
-            
-        return item.objects.filter(
+
+        qs = item.objects.filter(
             article__compte=self.request.user.compte,
             archive=True
         ).select_related(
@@ -250,6 +250,16 @@ class ArchiveItemListAPIView(ServerSideDataTableView):
         ).prefetch_related(
             'archive_items'
         ).order_by("-id")
+
+        motif_param = self.request.query_params.get('archive_motif')
+        if motif_param:
+            latest_motif = ArchiveItem.objects.filter(
+                item_archive_id=OuterRef('pk')
+            ).order_by('-created_at', '-id').values('motif')[:1]
+            qs = qs.annotate(_last_archive_motif=Subquery(latest_motif)).filter(
+                _last_archive_motif=motif_param
+            )
+        return qs
 
 
 class ItemDetailsAPI(APIView):

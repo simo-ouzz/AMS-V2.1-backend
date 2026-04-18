@@ -41,6 +41,8 @@ class UserDetailAPIView(APIView):
             "prenom": user.prenom,
             "email": user.email,
             "compte_id": user.compte_id,
+            "is_staff": bool(getattr(user, "is_staff", False)),
+            "is_superuser": bool(getattr(user, "is_superuser", False)),
         }
         return Response(user_data, status=200)
 

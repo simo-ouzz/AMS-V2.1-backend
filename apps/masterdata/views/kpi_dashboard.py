@@ -197,34 +197,30 @@ class KPIDashboardAPIView(APIView):
         }
     
     def _calculate_value_kpis(self, date_filters=None):
-        """Calcule les KPIs basés sur la valeur avec filtres de date"""
-        
-        # Appliquer les filtres de date aux articles
-        articles_qs = article.objects.all()
-        if date_filters:
-            articles_qs = DateFilterHelper.apply_date_filters_to_queryset(articles_qs, date_filters)
-        
-        # Valeur totale des achats
-        valeur_achats = articles_qs.aggregate(
-            total=Sum(F('prix_achat') * F('qte_recue'), default=0)
-        )['total'] or 0
-        
-        # Appliquer les filtres de date aux items
-        items_qs = item.objects.select_related('article__produit').filter(archive=False)
+        """Calcule les KPIs basés sur la valeur avec filtres de date.
+
+        La valeur totale d'achat du parc actif est la somme des ``prix_achat`` de
+        l'article de **chaque item non archivé** (une ligne item = une unité), comme
+        pour le calcul de valeur résiduelle / amortissement ligne à ligne.
+        Ce n'est plus ``Sum(prix_achat * qte_recue)`` au niveau catalogue article.
+        """
+        items_qs = item.objects.select_related('article', 'article__produit').filter(archive=False)
         if date_filters:
             items_qs = DateFilterHelper.apply_date_filters_to_queryset(items_qs, date_filters)
-        
-        # Valeur résiduelle totale (calculée sur les items)
+
+        # Valeur d'acquisition du parc actif = somme des prix unitaires (par item)
+        valeur_achats = items_qs.aggregate(
+            total=Sum('article__prix_achat', default=0)
+        )['total'] or 0
+
+        # Valeur résiduelle totale (même périmètre : items actifs)
         valeur_residuelle_totale = sum(
-            item.calculate_residual_value() or 0 for item in items_qs
+            (row.calculate_residual_value() or 0) for row in items_qs.iterator(chunk_size=500)
         )
-        
-        # Valeur amortie
+
         valeur_amortie = valeur_achats - valeur_residuelle_totale
-        
-        # Taux d'amortissement
         taux_amortissement = (valeur_amortie / valeur_achats * 100) if valeur_achats > 0 else 0
-        
+
         return {
             'valeur_totale_achats': float(valeur_achats),
             'valeur_residuelle_totale': float(valeur_residuelle_totale),
