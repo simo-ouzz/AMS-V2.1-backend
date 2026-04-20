@@ -25,7 +25,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from datatables import ServerSideDataTableView
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, Group
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
@@ -153,6 +153,129 @@ class UserListAPIView(APIView):
             for entry in users
         ]
         return Response(data, status=status.HTTP_200_OK)
+
+
+def _is_admin_user(user: UserWeb) -> bool:
+    return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+
+
+def _can_manage_target(request_user: UserWeb, target_user: UserWeb) -> bool:
+    if getattr(request_user, "is_superuser", False):
+        return True
+    if not request_user.compte_id:
+        return False
+    return request_user.compte_id == target_user.compte_id
+
+
+class AdminUserListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not _is_admin_user(user):
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = UserWeb.objects.all().select_related("compte")
+        if not getattr(user, "is_superuser", False):
+            queryset = queryset.filter(compte_id=user.compte_id)
+
+        rows = queryset.order_by("nom", "prenom", "email")
+        serializer = UserAdminSerializer(rows, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        user = request.user
+        if not _is_admin_user(user):
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        payload = request.data.copy()
+        if not getattr(user, "is_superuser", False):
+            if not user.compte_id:
+                return Response({"error": "Aucun compte assigné."}, status=status.HTTP_400_BAD_REQUEST)
+            payload["compte"] = user.compte_id
+            payload["is_staff"] = False
+
+        serializer = UserAdminCreateSerializer(data=payload)
+        if serializer.is_valid():
+            created = serializer.save()
+            return Response(UserAdminSerializer(created).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserLookupAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not _is_admin_user(user):
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        comptes_qs = Compte.objects.all().order_by("libelle")
+        if not getattr(user, "is_superuser", False):
+            comptes_qs = comptes_qs.filter(id=user.compte_id)
+
+        groupes_qs = Group.objects.all().order_by("name")
+        permissions_qs = Permission.objects.all().order_by("codename")
+
+        comptes = [{"id": c.id, "label": c.libelle} for c in comptes_qs]
+        groupes = [{"id": g.id, "name": g.name} for g in groupes_qs]
+        permissions = [{"id": p.id, "codename": p.codename, "name": p.name} for p in permissions_qs]
+        return Response(
+            {
+                "comptes": comptes,
+                "groups": groupes,
+                "permissions": permissions,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AdminUserDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+        actor = request.user
+        if not _is_admin_user(actor):
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            target = UserWeb.objects.get(id=user_id)
+        except UserWeb.DoesNotExist:
+            return Response({"error": "Utilisateur non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not _can_manage_target(actor, target):
+            return Response({"error": "Accès refusé sur ce compte."}, status=status.HTTP_403_FORBIDDEN)
+
+        payload = request.data.copy()
+        if not getattr(actor, "is_superuser", False):
+            payload.pop("compte", None)
+            payload.pop("is_superuser", None)
+            payload.pop("is_staff", None)
+
+        serializer = UserAdminUpdateSerializer(target, data=payload, partial=True)
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response(UserAdminSerializer(updated).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, user_id):
+        actor = request.user
+        if not _is_admin_user(actor):
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            target = UserWeb.objects.get(id=user_id)
+        except UserWeb.DoesNotExist:
+            return Response({"error": "Utilisateur non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not _can_manage_target(actor, target):
+            return Response({"error": "Accès refusé sur ce compte."}, status=status.HTTP_403_FORBIDDEN)
+        if target.id == actor.id:
+            return Response({"error": "Action impossible sur votre propre compte."}, status=status.HTTP_400_BAD_REQUEST)
+
+        target.is_active = False
+        target.save(update_fields=["is_active"])
+        return Response({"message": "Utilisateur désactivé."}, status=status.HTTP_200_OK)
 
 
 # =============================================================================

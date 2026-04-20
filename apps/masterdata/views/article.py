@@ -192,18 +192,20 @@ class ArticleDeleteAPIView(APIView):
                     status=status.HTTP_200_OK,
                 )
             else:
-                # Si non, renvoyer un message d'erreur
                 return Response(
                     {
-                        "error": "Cannot delete article. Quantity received is not equal to the original quantity."
+                        "error": (
+                            "Suppression impossible : la quantité reçue ne correspond pas à la "
+                            "quantité commandée (qte ≠ qte_recue). Ajustez les quantités ou "
+                            "supprimez d'abord les écarts liés aux items."
+                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
         except article.DoesNotExist:
-            # Si l'article n'existe pas, renvoyer une erreur 404
             return Response(
-                {"error": "Article not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Article introuvable."}, status=status.HTTP_404_NOT_FOUND
             )
 
 

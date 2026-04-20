@@ -166,3 +166,15 @@ class TagEmplacementSerializer(serializers.ModelSerializer):
     class Meta:
         model = tagEmplacement
         fields = '__all__'
+
+
+class TagWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = tag
+        fields = ['reference', 'statut', 'type', 'affecter']
+
+
+class TagEmplacementWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = tagEmplacement
+        fields = ['reference', 'statut', 'type', 'affecter']

@@ -181,7 +181,7 @@ class DetailInventaireSerializer(serializers.ModelSerializer):
 class CreatDetailInventaireSerializer(serializers.ModelSerializer):
     class Meta:
         model = detail_inventaire
-        fields = ['inventaire_emplacement', 'item', 'etat']
+        fields = ['inventaire_emplacement', 'item', 'tag_reference', 'etat']
 
 
 class DetailInventairesSerializer(serializers.ModelSerializer):
@@ -190,25 +190,41 @@ class DetailInventairesSerializer(serializers.ModelSerializer):
     emplacement = serializers.SerializerMethodField()
     item_id = serializers.SerializerMethodField()
     reference = serializers.SerializerMethodField()
+    tag = serializers.SerializerMethodField()
     emplacement_origine = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
     start_at = serializers.SerializerMethodField()
 
     class Meta:
         model = detail_inventaire
-        fields = ['item_id', 'reference', 'emplacement_origine', 'item', 'emplacement', 'etat', 'start_at', 'created_at']
+        fields = ['item_id', 'reference', 'tag', 'emplacement_origine', 'item', 'emplacement', 'etat', 'start_at', 'created_at']
 
     def get_emplacement_origine(self,obj):
-        return obj.item.emplacement.nom
+        if obj.item and obj.item.emplacement:
+            return obj.item.emplacement.nom
+        return "N/A"
     def get_item(self, obj):
-        return  obj.item.article.designation
+        if obj.item and obj.item.article:
+            return obj.item.article.designation
+        if obj.tag_reference:
+            return f"Tag inconnu ({obj.tag_reference})"
+        return "Article inconnu"
     def get_item_id(self,obj):
-        return obj.item.id
+        return obj.item.id if obj.item else None
     def get_reference(self,obj):
-        return obj.item.article.code_article
+        if obj.item and obj.item.article:
+            return obj.item.article.code_article
+        return obj.tag_reference or "N/A"
+    
+    def get_tag(self, obj):
+        if obj.item and obj.item.tag:
+            return obj.item.tag.reference
+        return obj.tag_reference
 
     def get_emplacement(self, obj):
-        return obj.inventaire_emplacement.emplacement.nom
+        if obj.inventaire_emplacement and obj.inventaire_emplacement.emplacement:
+            return obj.inventaire_emplacement.emplacement.nom
+        return "N/A"
 
     def get_start_at(self, obj):
         if obj.inventaire_emplacement:

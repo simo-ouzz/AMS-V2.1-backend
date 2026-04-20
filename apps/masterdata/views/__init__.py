@@ -3,6 +3,9 @@
 from .auth import (
     UserDetailAPIView,
     UserListAPIView,
+    AdminUserListCreateAPIView,
+    AdminUserDetailAPIView,
+    AdminUserLookupAPIView,
     LoginUserView,
     assign_groups_view,
     UserPermissionsView,
@@ -77,6 +80,7 @@ from .master import (
     CategoriesListAPIView,
     marquesListAPIView,
     tagsListAPIView,
+    tagEmplacementsListAPIView,
     TypeTagsListAPIView,
     zonesListAPIView,
     zonesListFilterAPIView,
@@ -119,6 +123,12 @@ from .master import (
     EmplacementCreateAPIView,
     EmplacementUpdateAPIView,
     EmplacementDeleteAPIView,
+    MasterTagCreateAPIView,
+    MasterTagUpdateAPIView,
+    MasterTagDeleteAPIView,
+    MasterTagEmplacementCreateAPIView,
+    MasterTagEmplacementUpdateAPIView,
+    MasterTagEmplacementDeleteAPIView,
 )
 from .tag import (
     TagCreateView,

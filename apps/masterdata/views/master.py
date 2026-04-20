@@ -10,6 +10,7 @@ from masterdata.serializers.master import (
     NatureWriteSerializer, FournisseurWriteSerializer, DepartementWriteSerializer,
     MarqueWriteSerializer, TypeTagWriteSerializer, OperationWriteSerializer,
     LocationWriteSerializer, ZoneWriteSerializer, EmplacementWriteSerializer,
+    TagWriteSerializer, TagEmplacementWriteSerializer,
 )
 from masterdata.models import *
 from masterdata.services.items import (
@@ -73,6 +74,7 @@ def _make_tenant_list_view(model_class, serializer_class, compte_lookup='compte'
 departementsListAPIView = _make_tenant_list_view(departement, DepartementSerializer)
 fournisseursListAPIView = _make_tenant_list_view(fournisseur, FournisseurSerializer)
 tagsListAPIView = _make_tenant_list_view(tag, TagSerializer)
+tagEmplacementsListAPIView = _make_tenant_list_view(tagEmplacement, TagEmplacementSerializer)
 locationsListAPIView = _make_tenant_list_view(location, LocationSerializer)
 PersonnesListAPIView = _make_tenant_list_view(Personne, PersonneSerializer)
 zonesListAPIView = _make_tenant_list_view(zone, ZoneSerializer, compte_lookup='location__compte')
@@ -299,6 +301,12 @@ DepartementCreateAPIView, DepartementUpdateAPIView, DepartementDeleteAPIView = \
 
 LocationCreateAPIView, LocationUpdateAPIView, LocationDeleteAPIView = \
     _make_tenant_crud_views(location, LocationWriteSerializer, "Location")
+
+MasterTagCreateAPIView, MasterTagUpdateAPIView, MasterTagDeleteAPIView = \
+    _make_tenant_crud_views(tag, TagWriteSerializer, "Tag")
+
+MasterTagEmplacementCreateAPIView, MasterTagEmplacementUpdateAPIView, MasterTagEmplacementDeleteAPIView = \
+    _make_tenant_crud_views(tagEmplacement, TagEmplacementWriteSerializer, "TagEmplacement")
 
 
 # ── Zone CRUD (custom create validation) ───────────────────────────────────

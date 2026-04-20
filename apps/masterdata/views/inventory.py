@@ -1764,12 +1764,18 @@ class CreateDetailInventaireView(APIView):
         for detail in list_detail:
             item_id = detail.get("item_id")
             statut = detail.get("statut")
+            tag_reference = detail.get("tag")
 
             try:
+                if item_id is None and not tag_reference:
+                    erreurs.append({"error": "item_id ou tag est requis pour chaque détail"})
+                    continue
+
                 # Préparer les données pour le sérialiseur
                 detail_data = {
                     "inventaire_emplacement": inventaire_emplacement_instance.id,
                     "item": item_id,
+                    "tag_reference": tag_reference,
                     "etat": statut,
                 }
 
@@ -1823,6 +1829,7 @@ class DetailInventaireListAPIView(ServerSideDataTableView):
     # Configuration DataTable
     search_fields = [
         'etat',
+        'tag_reference',
         'id',
         'item__article__designation',
         'item__reference_auto',
@@ -1835,6 +1842,7 @@ class DetailInventaireListAPIView(ServerSideDataTableView):
     column_field_mapping = {
         'id': 'id',
         'etat': 'etat',
+        'tag': 'tag_reference',
         'start_at': 'inventaire_emplacement__start_at',
         'item_designation': 'item__article__designation',
         'emplacement': 'inventaire_emplacement__emplacement__nom',

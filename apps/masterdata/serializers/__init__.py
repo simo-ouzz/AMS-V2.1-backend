@@ -4,7 +4,12 @@ Re-exports all serializer classes so that existing code using
 ``from masterdata.serializers import *`` continues to work.
 """
 
-from .user import UserLoginSerializer  # noqa: F401
+from .user import (
+    UserLoginSerializer,
+    UserAdminSerializer,
+    UserAdminCreateSerializer,
+    UserAdminUpdateSerializer,
+)  # noqa: F401
 from .master import (  # noqa: F401
     ProduitSerializer, MarqueSerializer, DepartementSerializer,
     TypeTagSerializer, FournisseurSerializer, NatureSerializer,
@@ -15,6 +20,7 @@ from .master import (  # noqa: F401
     MarqueWriteSerializer, TypeTagWriteSerializer, OperationWriteSerializer,
     LocationWriteSerializer, ZoneWriteSerializer, EmplacementWriteSerializer,
     TagEmplacementSerializer,
+    TagWriteSerializer, TagEmplacementWriteSerializer,
 )
 from .article import (  # noqa: F401
     ArticleSerializer, EditArticleSerializer, ArticleSerializeres,

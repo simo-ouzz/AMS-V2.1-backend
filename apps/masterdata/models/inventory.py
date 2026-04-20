@@ -88,7 +88,8 @@ class detail_inventaire(models.Model):
     """Inventory detail line linking an item and its observed state."""
     
     inventaire_emplacement = models.ForeignKey(inventaire_emplacement, on_delete=models.CASCADE, null=True,blank=True) 
-    item = models.ForeignKey(item, on_delete=models.CASCADE)
+    item = models.ForeignKey(item, on_delete=models.CASCADE, null=True, blank=True)
+    tag_reference = models.CharField(max_length=255, null=True, blank=True)
     etat = models.CharField(
         max_length=255,
         choices=[
@@ -103,4 +104,5 @@ class detail_inventaire(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()
     def __str__(self):
-        return f"{self.item} - {self.inventaire_emplacement}"
+        item_label = self.item if self.item else (self.tag_reference or "No item")
+        return f"{item_label} - {self.inventaire_emplacement}"

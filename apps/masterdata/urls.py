@@ -135,6 +135,9 @@ from masterdata.views import (
     UpdateStartAtAPIView,
     UserDetailAPIView,
     UserListAPIView,
+    AdminUserListCreateAPIView,
+    AdminUserDetailAPIView,
+    AdminUserLookupAPIView,
     UserPermissionsView,
     ValidateArticleView,
     VerifyTagsLocationAPI,
@@ -150,6 +153,13 @@ from masterdata.views import (
     operationsListAPIView,
     produitsListAPIView,
     tagsListAPIView,
+    tagEmplacementsListAPIView,
+    MasterTagCreateAPIView,
+    MasterTagUpdateAPIView,
+    MasterTagDeleteAPIView,
+    MasterTagEmplacementCreateAPIView,
+    MasterTagEmplacementUpdateAPIView,
+    MasterTagEmplacementDeleteAPIView,
     zonesListAPIView,
     zonesListFilterAPIView,
     # Master data CRUD views
@@ -215,6 +225,9 @@ urlpatterns = [
     # Utilisateur et permissions
     path("detail/user/", UserDetailAPIView.as_view(), name="user-detail"),  # GET - Info utilisateur
     path("users/all_users/", UserListAPIView.as_view(), name="users-list"),  # GET - Liste utilisateurs du compte
+    path("users/admin/", AdminUserListCreateAPIView.as_view(), name="admin-users-list-create"),  # GET/POST - Admin users CRUD base
+    path("users/admin/lookups/", AdminUserLookupAPIView.as_view(), name="admin-users-lookups"),  # GET - Comptes/groupes/permissions
+    path("users/admin/<int:user_id>/", AdminUserDetailAPIView.as_view(), name="admin-users-detail"),  # PATCH/DELETE - Admin users CRUD
     path('user/permissions/', UserPermissionsView.as_view(), name='user-permissions'),  # GET - Permissions utilisateur
     path('assign-groups/', assign_groups_view, name='assign-groups'),  # POST - Assigner groupes
     
@@ -241,8 +254,15 @@ urlpatterns = [
     
     # Tags RFID
     path("tags/all_tag/", tagsListAPIView.as_view(), name="tags-list"),  # GET - Liste tags
+    path("tag-emplacements/all_tag_emplacement/", tagEmplacementsListAPIView.as_view(), name="tag-emplacements-list"),  # GET - Liste tag emplacements
     path("api/type-tag/", TypeTagsListAPIView.as_view(), name="type-tag"),  # GET - Liste types de tags
     path("tag/create/", TagCreateView.as_view(), name="tag-create"),  # POST - Créer tag
+    path("tags/create/", MasterTagCreateAPIView.as_view(), name="tags-master-create"),  # POST - Créer tag (Paramétrage)
+    path("tags/update/<int:pk>/", MasterTagUpdateAPIView.as_view(), name="tags-master-update"),  # PUT - MAJ tag (Paramétrage)
+    path("tags/delete/<int:pk>/", MasterTagDeleteAPIView.as_view(), name="tags-master-delete"),  # DELETE - Supprimer tag (Paramétrage)
+    path("tag-emplacements/create/", MasterTagEmplacementCreateAPIView.as_view(), name="tag-emplacement-master-create"),  # POST - Créer tag emplacement
+    path("tag-emplacements/update/<int:pk>/", MasterTagEmplacementUpdateAPIView.as_view(), name="tag-emplacement-master-update"),  # PUT - MAJ tag emplacement
+    path("tag-emplacements/delete/<int:pk>/", MasterTagEmplacementDeleteAPIView.as_view(), name="tag-emplacement-master-delete"),  # DELETE - Supprimer tag emplacement
     path("item/update-tag/", UpdateTagAPIView.as_view(), name="update-tag"),  # PUT - Mettre à jour tag d'un item
     path("tag/all_Tag_History/<int:item_id>/", TagHistoryListAPIView.as_view(), name="tag-history-list"),  # GET - Historique tags d'un item (DataTable)
     path('assign-tag/', AssignTagToEmplacementAPIView.as_view(), name='assign-tag'),  # POST - Assigner tag à emplacement
